@@ -1,6 +1,7 @@
-package app
+package models
 
 import (
+	"oestrada1001/lp-chatgpt-integration/services"
 	"testing"
 )
 
@@ -56,7 +57,7 @@ func TestStringifyHardSkillTypesIntoQueryValues(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Call the function being tested
-			result := stringifyHardSkillTypesIntoQueryValues(tc.input)
+			result := services.StringifyHardSkillTypesIntoQueryValues(tc.input)
 
 			// Validate the output
 			if result != tc.expected {
@@ -118,7 +119,7 @@ func TestStringifyHardSkillTypeValueIntoQueryValue(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Call the function being tested
-			result := stringifyHardSkillTypeValueIntoQueryValues(tc.input)
+			result := services.StringifyHardSkillTypeValueIntoQueryValues(tc.input)
 
 			// Validate the output
 			if result != tc.expected {

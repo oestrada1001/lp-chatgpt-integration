@@ -8,8 +8,9 @@ import (
 	"github.com/julienschmidt/httprouter"
 	_ "log"
 	"net/http"
-	"oestrada1001/lp-chatgpt-integration/app"
 	"oestrada1001/lp-chatgpt-integration/chatgpt"
+	"oestrada1001/lp-chatgpt-integration/models"
+	"oestrada1001/lp-chatgpt-integration/services"
 )
 
 func main() {
@@ -31,7 +32,7 @@ func main() {
 
 func ProcessJobOpportunities(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
-	jobOpportunities, err := app.FetchJobOpportunities("SELECT title, description, company_name, error_message, hard_skill_process_status FROM job_opportunities")
+	jobOpportunities, err := services.FetchJobOpportunities("SELECT title, description, company_name, error_message, hard_skill_process_status FROM job_opportunities")
 	if err != nil {
 		http.Error(rw, "Failed to query database", http.StatusInternalServerError)
 		return
@@ -41,12 +42,12 @@ func ProcessJobOpportunities(rw http.ResponseWriter, r *http.Request, p httprout
 
 func RunFetchOrCreateHardSkillTypes(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
-	hardSkills := []app.HardSkillType{
+	hardSkills := []models.HardSkillType{
 		{Label: "Go", Value: "go", Description: "Go is a programming language"},
 		{Label: "Gl1o", Value: "gkjlo", Description: "adkGo is a programming language"},
 		{Label: "Goi", Value: "jklgo", Description: "Gasdko is a programming language"},
 	}
-	hardSkillTypes, err := app.ReplaceAndFetchHardSkillTypes(hardSkills)
+	hardSkillTypes, err := services.ReplaceAndFetchHardSkillTypes(hardSkills)
 	if err != nil {
 		http.Error(rw, "Failed to query database", http.StatusInternalServerError)
 		return
@@ -55,13 +56,13 @@ func RunFetchOrCreateHardSkillTypes(rw http.ResponseWriter, r *http.Request, p h
 }
 
 func RunFetchOrCreateProficiencyLevels(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	proficiencyLevels := []app.ProficiencyLevel{
+	proficiencyLevels := []models.ProficiencyLevel{
 		{Label: "2o", Value: "go", Description: "Go is a programming language"},
 		{Label: "dl1o", Value: "gkjlo", Description: "adkGo is a programming language"},
 		{Label: "doi", Value: "jklgo", Description: "Gasdko is a programming language"},
 	}
 
-	proficiencyLevels, err := app.ReplaceAndFetchProficiencyLevels(proficiencyLevels)
+	proficiencyLevels, err := services.ReplaceAndFetchProficiencyLevels(proficiencyLevels)
 	if err != nil {
 		http.Error(rw, "Failed to query database", http.StatusInternalServerError)
 		return
@@ -70,7 +71,7 @@ func RunFetchOrCreateProficiencyLevels(rw http.ResponseWriter, r *http.Request, 
 }
 
 func FetchJobOpportunities(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	jobOpportunities, err := app.FetchJobOpportunities("SELECT title, description, company_name, COALESCE(error_message, '') AS error_message, hard_skill_process_status FROM job_opportunities")
+	jobOpportunities, err := services.FetchJobOpportunities("SELECT title, description, company_name, COALESCE(error_message, '') AS error_message, hard_skill_process_status FROM job_opportunities")
 	if err != nil {
 		http.Error(rw, "Failed to query database", http.StatusInternalServerError)
 		return

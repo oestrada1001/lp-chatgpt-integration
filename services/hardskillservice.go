@@ -1,21 +1,14 @@
-package app
+package services
 
 import (
-	_ "database/sql"
 	"fmt"
 	"log"
+	"oestrada1001/lp-chatgpt-integration/database"
+	"oestrada1001/lp-chatgpt-integration/models"
 	"strings"
 )
 
-type HardSkill struct {
-	Id              int
-	Name            string
-	Link            string
-	Logo            string
-	HardSkillTypeId int
-}
-
-func replaceHardSkills(hardSkills []HardSkill) ([]HardSkill, error) {
+func replaceHardSkills(hardSkills []models.HardSkill) ([]models.HardSkill, error) {
 	if len(hardSkills) == 0 {
 		return nil, nil
 	}
@@ -33,7 +26,7 @@ func replaceHardSkills(hardSkills []HardSkill) ([]HardSkill, error) {
 	queryValues := strings.ReplaceAll(strings.Trim(strings.Join(valuePlaceholders, ","), ""), " ", "")
 	query := fmt.Sprintf("REPLACE INTO hard_skills (name, link, logo, hard_skill_type_id) VALUES %s", queryValues)
 
-	db := DatabaseConnection()
+	db := database.Connection()
 	defer db.Close()
 
 	results, err := db.Exec(query)
@@ -48,7 +41,7 @@ func replaceHardSkills(hardSkills []HardSkill) ([]HardSkill, error) {
 	return hardSkills, nil
 }
 
-func fetchHardSkills(hardSkills []HardSkill) ([]HardSkill, error) {
+func fetchHardSkills(hardSkills []models.HardSkill) ([]models.HardSkill, error) {
 	if len(hardSkills) == 0 {
 		return nil, nil
 	}
@@ -61,16 +54,16 @@ func fetchHardSkills(hardSkills []HardSkill) ([]HardSkill, error) {
 	query := fmt.Sprintf("SELECT id, name, link, logo, hard_skill_type_id FROM hard_skills WHERE name IN (%s)", queryValue)
 	fmt.Println("query", query)
 
-	rows, err := DatabaseConnection().Query(query)
+	rows, err := database.Connection().Query(query)
 	if err != nil {
 		fmt.Println("Error executing query:", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var updatedHardSkills []HardSkill
+	var updatedHardSkills []models.HardSkill
 	for rows.Next() {
-		var hardSkill HardSkill
+		var hardSkill models.HardSkill
 		err := rows.Scan(
 			&hardSkill.Id,
 			&hardSkill.Name,
@@ -87,7 +80,7 @@ func fetchHardSkills(hardSkills []HardSkill) ([]HardSkill, error) {
 	return updatedHardSkills, nil
 }
 
-func ReplaceAndFetchHardSkills(hardSkills []HardSkill) ([]HardSkill, error) {
+func ReplaceAndFetchHardSkills(hardSkills []models.HardSkill) ([]models.HardSkill, error) {
 	updatedHardSkills, err := replaceHardSkills(hardSkills)
 	if err != nil {
 		return nil, err

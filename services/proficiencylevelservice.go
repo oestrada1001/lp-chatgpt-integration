@@ -1,31 +1,11 @@
-package app
+package services
 
-import "log"
+import (
+	"log"
+	"oestrada1001/lp-chatgpt-integration/models"
+)
 
-type ProficiencyLevel struct {
-	Id          int
-	Label       string
-	Value       string
-	Description string
-}
-
-func (h ProficiencyLevel) GetId() int {
-	return h.Id
-}
-
-func (h ProficiencyLevel) GetLabel() string {
-	return h.Label
-}
-
-func (h ProficiencyLevel) GetValue() string {
-	return h.Value
-}
-
-func (h ProficiencyLevel) GetDescription() string {
-	return h.Description
-}
-
-func replaceProficiencyLevels(proficiencyLevels []ProficiencyLevel) ([]ProficiencyLevel, error) {
+func replaceProficiencyLevels(proficiencyLevels []models.ProficiencyLevel) ([]models.ProficiencyLevel, error) {
 	if len(proficiencyLevels) == 0 {
 		return nil, nil
 	}
@@ -38,16 +18,16 @@ func replaceProficiencyLevels(proficiencyLevels []ProficiencyLevel) ([]Proficien
 	return proficiencyLevels, nil
 }
 
-func fetchProficiencyLevels(proficiencyLevels []ProficiencyLevel) ([]ProficiencyLevel, error) {
+func fetchProficiencyLevels(proficiencyLevels []models.ProficiencyLevel) ([]models.ProficiencyLevel, error) {
 	if len(proficiencyLevels) == 0 {
 		return nil, nil
 	}
 
 	rows, _ := CreateAndExecuteReadQuery("proficiency_levels", proficiencyLevels)
 	defer rows.Close()
-	var updatedProficiencyLevels []ProficiencyLevel
+	var updatedProficiencyLevels []models.ProficiencyLevel
 	for rows.Next() {
-		var proficiencyLevel ProficiencyLevel
+		var proficiencyLevel models.ProficiencyLevel
 		err := rows.Scan(
 			&proficiencyLevel.Id,
 			&proficiencyLevel.Label,
@@ -63,7 +43,7 @@ func fetchProficiencyLevels(proficiencyLevels []ProficiencyLevel) ([]Proficiency
 	return updatedProficiencyLevels, nil
 }
 
-func ReplaceAndFetchProficiencyLevels(proficiencyLevels []ProficiencyLevel) ([]ProficiencyLevel, error) {
+func ReplaceAndFetchProficiencyLevels(proficiencyLevels []models.ProficiencyLevel) ([]models.ProficiencyLevel, error) {
 	updateContextTypes, err := replaceProficiencyLevels(proficiencyLevels)
 	if err != nil {
 		return nil, err

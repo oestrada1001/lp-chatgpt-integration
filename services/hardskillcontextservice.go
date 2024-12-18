@@ -1,31 +1,11 @@
-package app
+package services
 
-import "log"
+import (
+	"log"
+	"oestrada1001/lp-chatgpt-integration/models"
+)
 
-type HardSkillContext struct {
-	Id          int
-	Label       string
-	Value       string
-	Description string
-}
-
-func (h HardSkillContext) GetId() int {
-	return h.Id
-}
-
-func (h HardSkillContext) GetLabel() string {
-	return h.Label
-}
-
-func (h HardSkillContext) GetValue() string {
-	return h.Value
-}
-
-func (h HardSkillContext) GetDescription() string {
-	return h.Description
-}
-
-func replaceHardSkillContexts(hardSkillContexts []HardSkillContext) ([]HardSkillContext, error) {
+func replaceHardSkillContexts(hardSkillContexts []models.HardSkillContext) ([]models.HardSkillContext, error) {
 	if len(hardSkillContexts) == 0 {
 		return nil, nil
 	}
@@ -38,16 +18,16 @@ func replaceHardSkillContexts(hardSkillContexts []HardSkillContext) ([]HardSkill
 	return hardSkillContexts, nil
 }
 
-func fetchHardSkillContexts(hardSkillContexts []HardSkillContext) ([]HardSkillContext, error) {
+func fetchHardSkillContexts(hardSkillContexts []models.HardSkillContext) ([]models.HardSkillContext, error) {
 	if len(hardSkillContexts) == 0 {
 		return nil, nil
 	}
 
 	rows, _ := CreateAndExecuteReadQuery("hard_skill_contexts", hardSkillContexts)
 	defer rows.Close()
-	var updatedHardSkillContexts []HardSkillContext
+	var updatedHardSkillContexts []models.HardSkillContext
 	for rows.Next() {
-		var hardSkillContext HardSkillContext
+		var hardSkillContext models.HardSkillContext
 		err := rows.Scan(
 			&hardSkillContext.Id,
 			&hardSkillContext.Label,
@@ -63,7 +43,7 @@ func fetchHardSkillContexts(hardSkillContexts []HardSkillContext) ([]HardSkillCo
 	return updatedHardSkillContexts, nil
 }
 
-func ReplaceAndFetchHardSkillContexts(hardSkillContexts []HardSkillContext) ([]HardSkillContext, error) {
+func ReplaceAndFetchHardSkillContexts(hardSkillContexts []models.HardSkillContext) ([]models.HardSkillContext, error) {
 	updatedHardSkillContexts, err := replaceHardSkillContexts(hardSkillContexts)
 	if err != nil {
 		return nil, err

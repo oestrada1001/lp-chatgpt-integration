@@ -1,21 +1,15 @@
-package app
+package services
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
-	_ "oestrada1001/lp-chatgpt-integration/database"
+	"oestrada1001/lp-chatgpt-integration/database"
+	"oestrada1001/lp-chatgpt-integration/models"
 	"strings"
 )
 
-type Labellable interface {
-	GetId() int
-	GetLabel() string
-	GetValue() string
-	GetDescription() string
-}
-
-func StringifyHardSkillTypesIntoQueryValues[T Labellable](items []T) string {
+func StringifyHardSkillTypesIntoQueryValues[T models.Labellable](items []T) string {
 	valuesArray := make([]string, len(items))
 
 	for i, item := range items {
@@ -29,7 +23,7 @@ func StringifyHardSkillTypesIntoQueryValues[T Labellable](items []T) string {
 	return strings.ReplaceAll(strings.Trim(strings.Join(valuesArray, ","), ""), " ", "")
 }
 
-func StringifyHardSkillTypeValueIntoQueryValues[T Labellable](items []T) string {
+func StringifyHardSkillTypeValueIntoQueryValues[T models.Labellable](items []T) string {
 	valuesArray := make([]string, len(items))
 
 	for i, item := range items {
@@ -38,7 +32,7 @@ func StringifyHardSkillTypeValueIntoQueryValues[T Labellable](items []T) string 
 	return strings.Trim(strings.Join(valuesArray, ","), "")
 }
 
-func createReplaceQuery[T Labellable](tableName string, items []T) string {
+func createReplaceQuery[T models.Labellable](tableName string, items []T) string {
 	valuePlaceholder := StringifyHardSkillTypesIntoQueryValues(items)
 	query := fmt.Sprintf("REPLACE INTO %s (label, value, description) VALUES %s", tableName, valuePlaceholder)
 	fmt.Println("query", query)
@@ -46,7 +40,7 @@ func createReplaceQuery[T Labellable](tableName string, items []T) string {
 }
 
 func executeReplaceQuery(query string) (sql.Result, error) {
-	db := DatabaseConnection()
+	db := database.Connection()
 	defer db.Close()
 	results, err := db.Exec(query)
 	if err != nil {
@@ -58,16 +52,16 @@ func executeReplaceQuery(query string) (sql.Result, error) {
 	return results, nil
 }
 
-func createReadQuery[T Labellable](tableName string, items []T) string {
+func createReadQuery[T models.Labellable](tableName string, items []T) string {
 	valuePlaceholder := StringifyHardSkillTypeValueIntoQueryValues(items)
 	query := fmt.Sprintf("SELECT id, label, value, description FROM %s WHERE value IN (%s)", tableName, valuePlaceholder)
 	fmt.Println("query", query)
 	return query
 }
 
-func CreateAndExecuteReadQuery[T Labellable](tableName string, items []T) (*sql.Rows, error) {
+func CreateAndExecuteReadQuery[T models.Labellable](tableName string, items []T) (*sql.Rows, error) {
 	query := createReadQuery(tableName, items)
-	rows, err := DatabaseConnection().Query(query)
+	rows, err := database.Connection().Query(query)
 	if err != nil {
 		fmt.Println("Error executing query:", err)
 		return nil, err
@@ -75,7 +69,7 @@ func CreateAndExecuteReadQuery[T Labellable](tableName string, items []T) (*sql.
 	return rows, nil
 }
 
-func CreateAndExecuteReplaceQuery[T Labellable](tableName string, items []T) (sql.Result, error) {
+func CreateAndExecuteReplaceQuery[T models.Labellable](tableName string, items []T) (sql.Result, error) {
 	query := createReplaceQuery(tableName, items)
 	return executeReplaceQuery(query)
 }

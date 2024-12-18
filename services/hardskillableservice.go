@@ -1,20 +1,14 @@
-package app
+package services
 
 import (
 	"fmt"
 	"log"
+	"oestrada1001/lp-chatgpt-integration/database"
+	"oestrada1001/lp-chatgpt-integration/models"
 	"strings"
 )
 
-type HardSkillable struct {
-	HardSkillId        int
-	SkillableId        int
-	SkillableType      string
-	ProficiencyLevelId int
-	HardSkillContextId int
-}
-
-func replaceHardSkillable(hardSkillables []HardSkillable) ([]HardSkillable, error) {
+func replaceHardSkillable(hardSkillables []models.HardSkillable) ([]models.HardSkillable, error) {
 	if len(hardSkillables) == 0 {
 		return nil, nil
 	}
@@ -32,7 +26,7 @@ func replaceHardSkillable(hardSkillables []HardSkillable) ([]HardSkillable, erro
 	queryValues := strings.ReplaceAll(strings.Trim(strings.Join(valuePlaceholder, ","), ""), " ", "")
 	query := fmt.Sprintf("REPLACE INTO hard_skillables (skillable_id, skillable_type, hard_skill_id, proficiency_level_id, hard_skill_context_id) VALUES %s", queryValues)
 
-	db := DatabaseConnection()
+	db := database.Connection()
 	defer db.Close()
 
 	results, err := db.Exec(query)
@@ -47,7 +41,7 @@ func replaceHardSkillable(hardSkillables []HardSkillable) ([]HardSkillable, erro
 	return hardSkillables, nil
 }
 
-func fetchHardSkillables(hardSkillables []HardSkillable) ([]HardSkillable, error) {
+func fetchHardSkillables(hardSkillables []models.HardSkillable) ([]models.HardSkillable, error) {
 	if len(hardSkillables) == 0 {
 		return nil, nil
 	}
@@ -60,16 +54,16 @@ func fetchHardSkillables(hardSkillables []HardSkillable) ([]HardSkillable, error
 	query := fmt.Sprintf("Select * from hard_skillables where skillable_id IN (%s)", queryValue)
 	fmt.Println("query", query)
 
-	rows, err := DatabaseConnection().Query(query)
+	rows, err := database.Connection().Query(query)
 	if err != nil {
 		fmt.Println("Error executing query:", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var updatedHardSkillables []HardSkillable
+	var updatedHardSkillables []models.HardSkillable
 	for rows.Next() {
-		var skillable HardSkillable
+		var skillable models.HardSkillable
 		err := rows.Scan(
 			&skillable.SkillableId,
 			&skillable.SkillableType,
@@ -86,7 +80,7 @@ func fetchHardSkillables(hardSkillables []HardSkillable) ([]HardSkillable, error
 	return updatedHardSkillables, nil
 }
 
-func ReplaceAndFetchHardSkillables(skillables []HardSkillable) ([]HardSkillable, error) {
+func ReplaceAndFetchHardSkillables(skillables []models.HardSkillable) ([]models.HardSkillable, error) {
 	updateSkillables, err := replaceHardSkillable(skillables)
 	if err != nil {
 		return nil, err

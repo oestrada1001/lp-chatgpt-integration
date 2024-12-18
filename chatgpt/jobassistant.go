@@ -9,7 +9,8 @@ import (
 	"github.com/openai/openai-go" // imported as openai
 	"github.com/openai/openai-go/option"
 	"log"
-	"oestrada1001/lp-chatgpt-integration/app"
+	"oestrada1001/lp-chatgpt-integration/models"
+	"oestrada1001/lp-chatgpt-integration/services"
 )
 
 type FunctionResponse struct {
@@ -17,7 +18,7 @@ type FunctionResponse struct {
 	Data    string `json:"data"`
 }
 
-func JobAssistant(jobOpportunity app.JobOpportunity) {
+func JobAssistant(jobOpportunity models.JobOpportunity) {
 	assistantId := "asst_eHRybtmHVjcrz4Keik1IGqA1"
 	client := openai.NewClient(
 		option.WithHeader("OpenAI-Beta", "assistants=v2"),
@@ -64,18 +65,18 @@ func JobAssistant(jobOpportunity app.JobOpportunity) {
 				functionArgs := action.Function.Arguments // {hard_skill_types: {{label: '', value: '', description: ''}}}
 				fmt.Printf("Function name: %s, function args: %s\n", functionName, functionArgs)
 
-				var response FunctionResponse
+				var response string
 				switch functionName {
 				case "create_or_get_hard_skill_types":
 					var wrapper struct {
-						HardSkillTypes []app.HardSkillType `json:"hard_skill_types"`
+						HardSkillTypes []models.HardSkillType `json:"hard_skill_types"`
 					}
 					err := json.Unmarshal([]byte(functionArgs), &wrapper)
 					if err != nil {
 						fmt.Println(err)
 						continue
 					}
-					response, err = app.CreateOrGetHardSkillTypes(wrapper.HardSkillTypes)
+					response, err = services.CreateOrGetHardSkillTypes(wrapper.HardSkillTypes)
 					if err != nil {
 						fmt.Println(err)
 						continue
