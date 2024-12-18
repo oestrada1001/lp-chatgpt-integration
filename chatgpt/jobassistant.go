@@ -6,11 +6,15 @@ import (
 	"encoding/json"
 	_ "encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/openai/openai-go" // imported as openai
 	"github.com/openai/openai-go/option"
 	"log"
 	"oestrada1001/lp-chatgpt-integration/models"
 	"oestrada1001/lp-chatgpt-integration/services"
+	"os"
+	_ "os"
 )
 
 type FunctionResponse struct {
@@ -19,10 +23,17 @@ type FunctionResponse struct {
 }
 
 func JobAssistant(jobOpportunity models.JobOpportunity) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+		return
+	}
+
+	openaiApiKey := os.Getenv("OPENAI_API_KEY")
 	assistantId := "asst_eHRybtmHVjcrz4Keik1IGqA1"
 	client := openai.NewClient(
 		option.WithHeader("OpenAI-Beta", "assistants=v2"),
-		option.WithAPIKey(""),
+		option.WithAPIKey(openaiApiKey),
 	)
 	ctx := context.Background()
 
@@ -61,6 +72,7 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 			log.Printf("Processing required action: %s", action.Type)
 
 			if action.Type == "function" {
+				//actionId := action.ID
 				functionName := action.Function.Name
 				functionArgs := action.Function.Arguments // {hard_skill_types: {{label: '', value: '', description: ''}}}
 				fmt.Printf("Function name: %s, function args: %s\n", functionName, functionArgs)
@@ -82,9 +94,61 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 						continue
 					}
 				case "create_or_get_hard_skills":
+					var wrapper struct {
+						HardSkills []models.HardSkill `json:"hard_skills"`
+					}
+					err := json.Unmarshal([]byte(functionArgs), &wrapper)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+					response, err = services.CreateOrGetHardSkill(wrapper.HardSkills)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
 				case "create_or_get_proficiency_levels":
+					var wrapper struct {
+						ProficiencyLevels []models.ProficiencyLevel `json:"proficiency_levels"`
+					}
+					err := json.Unmarshal([]byte(functionArgs), &wrapper)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+					response, err = services.CreateOrGetProficiencyLevels(wrapper.ProficiencyLevels)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
 				case "create_or_get_hard_skill_contexts":
+					var wrapper struct {
+						HardSkillContexts []models.HardSkillContext `json:"hard_skill_contexts"`
+					}
+					err := json.Unmarshal([]byte(functionArgs), &wrapper)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+					response, err = services.CreateOrGetHardSkillContexts(wrapper.HardSkillContexts)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
 				case "create_hard_skillables":
+					var wrapper struct {
+						HardSkillables []models.HardSkillable `json:"hard_skillables"`
+					}
+					err := json.Unmarshal([]byte(functionArgs), &wrapper)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+					response, err = services.CreateOrGetHardSkillables(wrapper.HardSkillables)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
 				}
 				fmt.Println(response)
 			}

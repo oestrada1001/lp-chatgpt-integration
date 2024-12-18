@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"log"
 	"oestrada1001/lp-chatgpt-integration/models"
 )
@@ -49,4 +50,16 @@ func ReplaceAndFetchHardSkillContexts(hardSkillContexts []models.HardSkillContex
 		return nil, err
 	}
 	return fetchHardSkillContexts(updatedHardSkillContexts)
+}
+
+func CreateOrGetHardSkillContexts(hardSkillContexts []models.HardSkillContext) (string, error) {
+	hardSkillContexts, err := ReplaceAndFetchHardSkillContexts(hardSkillContexts)
+	if err != nil {
+		return "", err
+	}
+	jsonHardSkillContexts, err := json.Marshal(hardSkillContexts)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonHardSkillContexts), nil
 }

@@ -13,14 +13,14 @@ func StringifyHardSkillTypesIntoQueryValues[T models.Labellable](items []T) stri
 	valuesArray := make([]string, len(items))
 
 	for i, item := range items {
-		valuesArray[i] = fmt.Sprintf("('%s', '%s', '%s')",
+		valuesArray[i] = fmt.Sprintf("('%s','%s','%s')",
 			item.GetLabel(),
 			item.GetValue(),
 			item.GetDescription(),
 		)
 
 	}
-	return strings.ReplaceAll(strings.Trim(strings.Join(valuesArray, ","), ""), " ", "")
+	return strings.Trim(strings.Join(valuesArray, ","), "")
 }
 
 func StringifyHardSkillTypeValueIntoQueryValues[T models.Labellable](items []T) string {

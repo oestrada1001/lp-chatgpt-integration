@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"oestrada1001/lp-chatgpt-integration/database"
@@ -15,7 +16,7 @@ func replaceHardSkillable(hardSkillables []models.HardSkillable) ([]models.HardS
 
 	valuePlaceholder := make([]string, len(hardSkillables))
 	for i, item := range hardSkillables {
-		valuePlaceholder[i] = fmt.Sprintf("('%s','%s','%s','%s','%s')",
+		valuePlaceholder[i] = fmt.Sprintf("('%d','%s','%d','%d','%d')",
 			item.SkillableId,
 			item.SkillableType,
 			item.HardSkillId,
@@ -23,7 +24,7 @@ func replaceHardSkillable(hardSkillables []models.HardSkillable) ([]models.HardS
 			item.HardSkillContextId,
 		)
 	}
-	queryValues := strings.ReplaceAll(strings.Trim(strings.Join(valuePlaceholder, ","), ""), " ", "")
+	queryValues := strings.Trim(strings.Join(valuePlaceholder, ","), "")
 	query := fmt.Sprintf("REPLACE INTO hard_skillables (skillable_id, skillable_type, hard_skill_id, proficiency_level_id, hard_skill_context_id) VALUES %s", queryValues)
 
 	db := database.Connection()
@@ -86,4 +87,16 @@ func ReplaceAndFetchHardSkillables(skillables []models.HardSkillable) ([]models.
 		return nil, err
 	}
 	return fetchHardSkillables(updateSkillables)
+}
+
+func CreateOrGetHardSkillables(skillables []models.HardSkillable) (string, error) {
+	skillables, err := ReplaceAndFetchHardSkillables(skillables)
+	if err != nil {
+		return "", err
+	}
+	jsonSkillables, err := json.Marshal(skillables)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonSkillables), nil
 }

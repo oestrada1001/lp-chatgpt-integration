@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"log"
 	"oestrada1001/lp-chatgpt-integration/models"
 )
@@ -49,4 +50,16 @@ func ReplaceAndFetchProficiencyLevels(proficiencyLevels []models.ProficiencyLeve
 		return nil, err
 	}
 	return fetchProficiencyLevels(updateContextTypes)
+}
+
+func CreateOrGetProficiencyLevels(proficiencyLevels []models.ProficiencyLevel) (string, error) {
+	proficiencyLevels, err := ReplaceAndFetchProficiencyLevels(proficiencyLevels)
+	if err != nil {
+		return "", err
+	}
+	jsonProficiencyLevels, err := json.Marshal(proficiencyLevels)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonProficiencyLevels), nil
 }
