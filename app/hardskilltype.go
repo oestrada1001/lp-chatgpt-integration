@@ -1,7 +1,9 @@
 package app
 
 import (
+	"encoding/json"
 	"log"
+	"oestrada1001/lp-chatgpt-integration/chatgpt"
 )
 
 type HardSkillType struct {
@@ -72,4 +74,20 @@ func ReplaceAndFetchHardSkillTypes(hardSkillTypes []HardSkillType) ([]HardSkillT
 		return nil, err
 	}
 	return fetchHardSkillTypes(updatedHardSkillTypes)
+}
+
+func CreateOrGetHardSkillTypes(hardSkillTypes []HardSkillType) (chatgpt.FunctionResponse, error) {
+	hardSkillTypes, err := ReplaceAndFetchHardSkillTypes(hardSkillTypes)
+	if err != nil {
+		return chatgpt.FunctionResponse{}, err
+	}
+
+	jsonHardSkillTypes, err := json.Marshal(hardSkillTypes)
+	if err != nil {
+		return chatgpt.FunctionResponse{}, err
+	}
+	return chatgpt.FunctionResponse{
+		Message: "Hard Skill Types",
+		Data:    string(jsonHardSkillTypes),
+	}, nil
 }

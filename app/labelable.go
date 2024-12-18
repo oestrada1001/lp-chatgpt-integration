@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	_ "oestrada1001/lp-chatgpt-integration/database"
 	"strings"
 )
 
