@@ -2,9 +2,7 @@ package chatgpt
 
 import (
 	"context"
-	_ "context"
 	"encoding/json"
-	_ "encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
@@ -14,7 +12,7 @@ import (
 	"oestrada1001/lp-chatgpt-integration/models"
 	"oestrada1001/lp-chatgpt-integration/services"
 	"os"
-	_ "os"
+	"sync"
 )
 
 type FunctionResponse struct {
@@ -57,7 +55,7 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 	println("Created thread with id", thread.ID)
 	run, err := client.Beta.Threads.Runs.NewAndPoll(ctx, thread.ID, openai.BetaThreadRunNewParams{
 		AssistantID:            openai.F(assistantId),
-		AdditionalInstructions: openai.String("Process the job opportunity and call functions as needed to complete hard skill processing."),
+		AdditionalInstructions: openai.String("Process the job opportunity and call functions as needed to complete hard skill processing. You will need to make multiple sequential calls to the functions because the 'hard_skillables' field is a list of object reference Ids. The first call should execute the 'create_or_get_hard_skill_types', 'create_or_get_proficiency_levels', and 'create_or_get_hard_skill_contexts' functions. The second call should execute the 'create_or_get_hard_skills' function and use the response from the first call associate the 'hard_skill_types' with the 'hard_skills'. The third call should execute the 'create_hard_skillables' function and use the response from the first and second call to provide the list of Ids to associate with the 'hard_skillables'."),
 	}, 0)
 
 	if err != nil {
@@ -65,14 +63,16 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 	}
 
 	if run.Status == openai.RunStatusRequiresAction {
+
 		actions := run.RequiredAction.SubmitToolOutputs.ToolCalls
 		fmt.Print(actions)
 
+		var toolOutputs []openai.BetaThreadRunSubmitToolOutputsParamsToolOutput
 		for _, action := range actions {
 			log.Printf("Processing required action: %s", action.Type)
 
 			if action.Type == "function" {
-				//actionId := action.ID
+				actionId := action.ID
 				functionName := action.Function.Name
 				functionArgs := action.Function.Arguments // {hard_skill_types: {{label: '', value: '', description: ''}}}
 				fmt.Printf("Function name: %s, function args: %s\n", functionName, functionArgs)
@@ -151,9 +151,30 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 					}
 				}
 				fmt.Println(response)
+
+				newToolOutputs := []openai.BetaThreadRunSubmitToolOutputsParamsToolOutput{
+					{
+						Output:     openai.F(response),
+						ToolCallID: openai.F(actionId),
+					},
+				}
+				toolOutputs = append(toolOutputs, newToolOutputs...)
 			}
 		}
+		params := openai.BetaThreadRunSubmitToolOutputsParams{
+			ToolOutputs: openai.F(toolOutputs),
+		}
+		// Fixed code to address type mismatch
+		response, submitErr := client.Beta.Threads.Runs.SubmitToolOutputs(ctx, thread.ID, run.ID, params)
+		fmt.Println(response)
+
+		if submitErr != nil {
+			log.Printf("Error submitting tool outputs.")
+		} else {
+			log.Printf("Successfully submitted tool outputs.")
+		}
 	}
+
 	if run.Status == openai.RunStatusCompleted {
 		messages, err := client.Beta.Threads.Messages.List(ctx, thread.ID, openai.BetaThreadMessageListParams{})
 
@@ -167,4 +188,5 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 			}
 		}
 	}
+
 }
