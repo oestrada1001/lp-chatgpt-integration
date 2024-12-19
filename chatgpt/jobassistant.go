@@ -28,7 +28,7 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 	}
 
 	openaiApiKey := os.Getenv("OPENAI_API_KEY")
-	assistantId := "asst_eHRybtmHVjcrz4Keik1IGqA1"
+	assistantId := "asst_EduFYodMbZXx2XM3MdWloGrc"
 	client := openai.NewClient(
 		option.WithHeader("OpenAI-Beta", "assistants=v2"),
 		option.WithAPIKey(openaiApiKey),
@@ -40,7 +40,7 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 			{
 				Content: openai.F([]openai.MessageContentPartParamUnion{
 					openai.TextContentBlockParam{
-						Text: openai.String("Job Oppotunity Id: 3, Job Title: " + jobOpportunity.Title + ", Job Description: " + jobOpportunity.Description + ", Company Name: " + jobOpportunity.CompanyName),
+						Text: openai.String(fmt.Sprintf("Job Oppotunity Id: %d, Job Title: %s, Job Description: %s, Company Name: %s", jobOpportunity.Id, jobOpportunity.Title, jobOpportunity.Description, jobOpportunity.CompanyName)),
 						Type: openai.F(openai.TextContentBlockParamTypeText),
 					},
 				}),
@@ -66,6 +66,9 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 
 		actions := run.RequiredAction.SubmitToolOutputs.ToolCalls
 		fmt.Print(actions)
+
+		var wg sync.WaitGroup
+		wg.Add(len(actions))
 
 		var toolOutputs []openai.BetaThreadRunSubmitToolOutputsParamsToolOutput
 		for _, action := range actions {
@@ -160,11 +163,12 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 				}
 				toolOutputs = append(toolOutputs, newToolOutputs...)
 			}
+			defer wg.Done()
 		}
+		wg.Wait()
 		params := openai.BetaThreadRunSubmitToolOutputsParams{
 			ToolOutputs: openai.F(toolOutputs),
 		}
-		// Fixed code to address type mismatch
 		response, submitErr := client.Beta.Threads.Runs.SubmitToolOutputs(ctx, thread.ID, run.ID, params)
 		fmt.Println(response)
 
@@ -172,6 +176,7 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 			log.Printf("Error submitting tool outputs.")
 		} else {
 			log.Printf("Successfully submitted tool outputs.")
+			RunJobOpportunityAssociations(client, ctx, assistantId, run, thread)
 		}
 	}
 
@@ -189,4 +194,100 @@ func JobAssistant(jobOpportunity models.JobOpportunity) {
 		}
 	}
 
+}
+
+func RunJobOpportunityAssociations(client *openai.Client, ctx context.Context, assistantId string, run *openai.Run, thread *openai.Thread) {
+	println("Created thread with id", thread.ID)
+	secondRun, err := client.Beta.Threads.Runs.NewAndPoll(ctx, thread.ID, openai.BetaThreadRunNewParams{
+		AssistantID:            openai.F(assistantId),
+		AdditionalInstructions: openai.String("Provide me with list of `hard_skills` with the associated `hard_skill_type_id` and the `hard_skillables` with the associated `hard_skill_id` and `proficiency_level_id` and `hard_skill_context_id`."),
+	}, 0)
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	if secondRun.Status == openai.RunStatusRequiresAction {
+		actions := secondRun.RequiredAction.SubmitToolOutputs.ToolCalls
+		fmt.Print(actions)
+
+		var toolOutputs []openai.BetaThreadRunSubmitToolOutputsParamsToolOutput
+		for _, action := range actions {
+			log.Printf("Processing required action: %s", action.Type)
+
+			if action.Type == "function" {
+				actionId := action.ID
+				functionName := action.Function.Name
+				functionArgs := action.Function.Arguments
+				fmt.Printf("Function name: %s, function args: %s\n", functionName, functionArgs)
+
+				var response string
+				switch functionName {
+				case "create_hard_skillables":
+					var wrapper struct {
+						HardSkillables []models.HardSkillable `json:"hard_skillables"`
+					}
+					err := json.Unmarshal([]byte(functionArgs), &wrapper)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+					response, err = services.CreateOrGetHardSkillables(wrapper.HardSkillables)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+				case "create_or_get_hard_skills":
+					var wrapper struct {
+						HardSkills []models.HardSkill `json:"hard_skills"`
+					}
+					err := json.Unmarshal([]byte(functionArgs), &wrapper)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+					response, err = services.CreateOrGetHardSkill(wrapper.HardSkills)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+				}
+				fmt.Println(response)
+				newToolOutputs := []openai.BetaThreadRunSubmitToolOutputsParamsToolOutput{
+					{
+						Output:     openai.F(response),
+						ToolCallID: openai.F(actionId),
+					},
+				}
+				toolOutputs = append(toolOutputs, newToolOutputs...)
+			}
+		}
+
+		params := openai.BetaThreadRunSubmitToolOutputsParams{
+			ToolOutputs: openai.F(toolOutputs),
+		}
+
+		response, submitErr := client.Beta.Threads.Runs.SubmitToolOutputs(ctx, thread.ID, run.ID, params)
+		fmt.Println(response)
+
+		if submitErr != nil {
+			log.Printf("Error second submitting tool outputs.")
+		} else {
+			log.Printf("Successfully second submitted tool outputs.")
+		}
+	}
+
+	if run.Status == openai.RunStatusCompleted {
+		messages, err := client.Beta.Threads.Messages.List(ctx, thread.ID, openai.BetaThreadMessageListParams{})
+
+		if err != nil {
+			panic(err.Error())
+		}
+
+		for _, data := range messages.Data {
+			for _, content := range data.Content {
+				println(content.Text.Value)
+			}
+		}
+	}
 }
